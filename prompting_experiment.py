@@ -1,5 +1,7 @@
 import os
 import anthropic
+import json
+
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 # 1.Zero shot
@@ -49,3 +51,31 @@ system_prompt =  client.messages.create(
 print("\n---System Prompt----")
 print(system_prompt.content[0].text)
 
+
+# 4. Structured JSON output
+json_prompt = """Classify this bug report and respond with ONLY valid JSON , no other text.
+
+Bug : " Login button is 2px off-center on the signup page."
+
+Respond in this exact format:
+{"severity": "..." , "category": "...", "confidence": "high/medium/low"}
+""" 
+
+json_response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=100,
+    messages=[
+        {"role": "user", "content": json_prompt}
+    ]
+)
+
+raw_text = json_response.content[0].text
+
+print("\n---Structured JSON Output (raw)----")
+print(raw_text)
+
+# Now actually parse it like real code would do
+parsed = json.loads(raw_text)
+print("\n--- parsed into Python dict ---")
+print(parsed)
+print("Severity value alone:", parsed["severity"])
